@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.17;
 
+import {IYieldShare} from '../interfaces/IYieldShare.sol';
 import {ERC20} from 'isolmate/tokens/ERC20.sol';
 import {ERC4626} from 'isolmate/mixins/ERC4626.sol';
 import {SafeTransferLib} from 'isolmate/utils/SafeTransferLib.sol';
 import {FixedPointMathLib} from 'isolmate/utils/FixedPointMathLib.sol';
 
-contract YieldShare {
+contract YieldShare is IYieldShare {
   using SafeTransferLib for ERC20;
   using FixedPointMathLib for uint256;
 
@@ -24,12 +25,14 @@ contract YieldShare {
   // shareId => Share
   mapping(bytes32 => Share) public yieldShares;
 
-  constructor(address _token, address _vault) {
-    token = ERC20(_token);
-    vault = ERC4626(_vault);
+  constructor(ERC20 _token, ERC4626 _vault) {
+    token = _token;
+    vault = _vault;
   }
 
-  function depositAssets(uint256 amount) external {
+  function depositAssets(uint256 amount) external override {
+    if (amount == 0) revert InvalidAmount();
+
     // Transfer token from the sender
     token.safeTransferFrom({from: msg.sender, to: address(this), amount: amount});
 
@@ -41,21 +44,27 @@ contract YieldShare {
 
     // Store sender shares
     balances[msg.sender] += shares;
+
+    emit SharesDeposited(msg.sender, shares);
   }
 
-  function withdrawAssets(uint256 shares) external {
+  function withdrawAssets(uint256 shares) external override {
+    if (shares == 0) revert InvalidAmount();
+
     // Decrease sender shares, implicit check for enough balance
     balances[msg.sender] -= shares;
 
     // Withdraw from vault
     vault.redeem({shares: shares, receiver: msg.sender, owner: address(this)});
+
+    emit SharesWithdrawn(msg.sender, shares);
   }
 
   function _getShareId(address from, address to) private pure returns (bytes32 shareId) {
     shareId = keccak256(abi.encode(from, to));
   }
 
-  function shareYield(uint256 shares, address to, uint8 percentage) external {
+  function startYieldSharing(uint256 shares, address to, uint8 percentage) external {
     // Decrease sender shares, implicit check for enough balance
     balances[msg.sender] -= shares;
 
@@ -74,7 +83,7 @@ contract YieldShare {
 
     uint256 diff = currentAssets - lastAssets;
     uint8 receiverPercentage = yieldShare.percentage;
-    uint8 senderPercentage = 100 - yieldShare.percentage;
+    uint8 senderPercentage = 100 - receiverPercentage;
 
     uint256 senderAssets = diff.mulDivDown(senderPercentage, 100);
     uint256 receiverAssets = diff.mulDivDown(receiverPercentage, 100);
@@ -100,5 +109,19 @@ contract YieldShare {
 
     yieldShare.shares = senderBalance;
     yieldShare.lastAssets = newlastAssets;
+  }
+
+  function stopYieldSharing(address to) external {
+    bytes32 shareId = _getShareId(msg.sender, to);
+    Share storage yieldShare = yieldShares[shareId];
+
+    (uint256 senderBalance, uint256 receiverBalance) = _balanceOf(yieldShare);
+
+    balances[to] += receiverBalance;
+    balances[msg.sender] += senderBalance;
+
+    // @audit Remove percentage?
+    yieldShare.shares = 0;
+    yieldShare.lastAssets = 0;
   }
 }
