@@ -2,10 +2,10 @@
 pragma solidity 0.8.17;
 
 import {IYieldShare} from '../interfaces/IYieldShare.sol';
-import {ERC20} from 'isolmate/tokens/ERC20.sol';
-import {ERC4626} from 'isolmate/mixins/ERC4626.sol';
-import {SafeTransferLib} from 'isolmate/utils/SafeTransferLib.sol';
-import {FixedPointMathLib} from 'isolmate/utils/FixedPointMathLib.sol';
+import {ERC20} from 'solmate/tokens/ERC20.sol';
+import {ERC4626} from 'solmate/mixins/ERC4626.sol';
+import {SafeTransferLib} from 'solmate/utils/SafeTransferLib.sol';
+import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
 
 contract YieldShare is IYieldShare {
   using SafeTransferLib for ERC20;
@@ -27,7 +27,7 @@ contract YieldShare is IYieldShare {
 
   constructor(ERC20 _token, ERC4626 _vault) {
     vault = _vault;
-    token = _token; // @audit Get from vault.asset() ?
+    token = _token;
   }
 
   /*///////////////////////////////////////////////////////////////
@@ -70,8 +70,9 @@ contract YieldShare is IYieldShare {
 
   function startYieldSharing(uint256 shares, address to, uint8 percentage) external override {
     if (shares == 0) revert InvalidAmount();
-    if (to == address(0)) revert InvalidAddress();
+    if (to == address(0)) revert InvalidAddress(); // @audit Check msg.sender == to ?
     if (percentage == 0 || percentage > 100) revert InvalidPercentage();
+    // @audit check not sarted yet
 
     // Decrease sender shares, implicit check for enough balance
     balances[msg.sender] -= shares;
@@ -132,18 +133,22 @@ contract YieldShare is IYieldShare {
   }
 
   function _balanceOf(Share storage yieldShare) private view returns (uint256 senderBalance, uint256 receiverBalance) {
+    // uint256 pricePerShare = vault.convertToAssets(1);
     uint256 currentAssets = vault.convertToAssets(yieldShare.shares); // @audit Get price per share to reduce last vault calls
+    // uint256 currentAssets = yieldShare.shares * pricePerShare;
     uint256 lastAssets = yieldShare.lastAssets;
 
     uint256 diff = currentAssets - lastAssets;
     uint8 receiverPercentage = yieldShare.percentage;
     uint8 senderPercentage = 100 - receiverPercentage;
 
-    uint256 senderAssets = diff.mulDivDown(senderPercentage, 100);
+    uint256 senderAssets = lastAssets + diff.mulDivDown(senderPercentage, 100);
     uint256 receiverAssets = diff.mulDivDown(receiverPercentage, 100);
 
     senderBalance = vault.convertToShares(senderAssets);
     receiverBalance = vault.convertToShares(receiverAssets);
+    // senderBalance = senderAssets / pricePerShare;
+    // receiverBalance = receiverAssets / pricePerShare;
   }
 
   /*///////////////////////////////////////////////////////////////

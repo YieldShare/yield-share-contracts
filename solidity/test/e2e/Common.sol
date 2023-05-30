@@ -1,25 +1,31 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.4 <0.9.0;
+pragma solidity 0.8.17;
 
 import {DSTestFull} from 'test/utils/DSTestFull.sol';
 import {console} from 'forge-std/console.sol';
-import {IERC20} from 'isolmate/interfaces/tokens/IERC20.sol';
-
-import {Greeter, IGreeter} from 'contracts/Greeter.sol';
+import {ERC4626} from 'solmate/mixins/ERC4626.sol';
+import {ERC20} from 'solmate/tokens/ERC20.sol';
+import {AaveV3ERC4626Factory} from 'yield-daddy/aave-v3/AaveV3ERC4626Factory.sol';
+import {YieldShare, IYieldShare} from 'contracts/YieldShare.sol';
 
 contract CommonE2EBase is DSTestFull {
-  uint256 internal constant _FORK_BLOCK = 8_945_216;
+  uint256 internal constant _FORK_BLOCK = 43_304_225;
 
-  string internal _initialGreeting = 'hola';
   address internal _user = _label('user');
   address internal _owner = _label('owner');
-  address internal _daiWhale = 0x93e39f67f79B448ABd58fC7Ef813c55636c4510f;
-  IERC20 internal _dai = IERC20(0x65a5ba240CBd7fD75700836b683ba95EBb2F32bd);
-  IGreeter internal _greeter;
+  address internal _daiWhale = 0x4aac95EBE2eA6038982566741d1860556e265F8B;
+
+  ERC20 internal _dai = ERC20(0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063); // Polygon DAI
+  AaveV3ERC4626Factory internal _aaveV3Factory = AaveV3ERC4626Factory(0xd847253c30502Af5Ae84275c52f24B438FDd9fE7); // Polygon Factory
+
+  IYieldShare internal _yieldShare;
 
   function setUp() public {
-    vm.createSelectFork(vm.rpcUrl('goerli'), _FORK_BLOCK);
+    vm.createSelectFork(vm.rpcUrl('polygon'), _FORK_BLOCK);
     vm.prank(_owner);
-    _greeter = new Greeter(_initialGreeting, _dai);
+
+    ERC4626 _vault = ERC4626(address(_aaveV3Factory.createERC4626(_dai)));
+
+    _yieldShare = new YieldShare(_dai, _vault);
   }
 }
