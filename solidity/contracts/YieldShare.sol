@@ -26,8 +26,8 @@ contract YieldShare is IYieldShare {
   mapping(bytes32 => Share) public yieldShares;
 
   constructor(ERC20 _token, ERC4626 _vault) {
-    vault = _vault;
     token = _token;
+    vault = _vault;
   }
 
   /*///////////////////////////////////////////////////////////////
@@ -133,22 +133,18 @@ contract YieldShare is IYieldShare {
   }
 
   function _balanceOf(Share storage yieldShare) private view returns (uint256 senderBalance, uint256 receiverBalance) {
-    // uint256 pricePerShare = vault.convertToAssets(1);
-    uint256 currentAssets = vault.convertToAssets(yieldShare.shares); // @audit Get price per share to reduce last vault calls
-    // uint256 currentAssets = yieldShare.shares * pricePerShare;
+    uint256 currentShares = yieldShare.shares;
+    uint256 currentAssets = vault.convertToAssets(currentShares);
     uint256 lastAssets = yieldShare.lastAssets;
 
     uint256 diff = currentAssets - lastAssets;
     uint8 receiverPercentage = yieldShare.percentage;
-    uint8 senderPercentage = 100 - receiverPercentage;
 
-    uint256 senderAssets = lastAssets + diff.mulDivDown(senderPercentage, 100);
     uint256 receiverAssets = diff.mulDivDown(receiverPercentage, 100);
+    uint256 senderAssets = currentAssets - receiverAssets;
 
     senderBalance = vault.convertToShares(senderAssets);
-    receiverBalance = vault.convertToShares(receiverAssets);
-    // senderBalance = senderAssets / pricePerShare;
-    // receiverBalance = receiverAssets / pricePerShare;
+    receiverBalance = currentShares - senderBalance;
   }
 
   /*///////////////////////////////////////////////////////////////

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import {ERC4626} from 'solmate/mixins/ERC4626.sol';
+
 /**
  * @title Yield Share Contract
  * @author agusduha & alanbenju
@@ -59,7 +61,11 @@ interface IYieldShare {
                             VARIABLES
   //////////////////////////////////////////////////////////////*/
 
+  function vault() external view returns (ERC4626 vault);
+
   function balances(address user) external view returns (uint256 balance);
+
+  function yieldShares(bytes32 shareId) external view returns (uint256 shares, uint256 lastAssets, uint8 percentage);
 
   /*///////////////////////////////////////////////////////////////
                             LOGIC

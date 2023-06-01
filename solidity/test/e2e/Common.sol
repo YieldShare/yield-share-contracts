@@ -20,7 +20,7 @@ contract CommonE2EBase is DSTestFull {
 
   IYieldShare internal _yieldShare;
 
-  function setUp() public {
+  function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('polygon'), _FORK_BLOCK);
     vm.prank(_owner);
 
