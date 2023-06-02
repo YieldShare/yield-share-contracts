@@ -49,7 +49,7 @@ contract YieldShare is IYieldShare {
     // Store sender shares
     balances[msg.sender] += shares;
 
-    emit SharesDeposited(msg.sender, shares);
+    emit SharesDeposited(msg.sender, shares); // @audit emit AssetsDeposited?
   }
 
   function withdrawAssets(uint256 shares) external override {
@@ -102,6 +102,7 @@ contract YieldShare is IYieldShare {
     // @audit Remove percentage?
     yieldShare.shares = 0;
     yieldShare.lastAssets = 0;
+    yieldShare.percentage = 0;
 
     emit YieldSharingStopped(shareId, msg.sender, to, senderBalance, receiverBalance);
   }
@@ -142,6 +143,8 @@ contract YieldShare is IYieldShare {
 
     uint256 receiverAssets = diff.mulDivDown(receiverPercentage, 100);
     uint256 senderAssets = currentAssets - receiverAssets;
+
+    if (receiverAssets == 0) return (currentShares, 0);
 
     senderBalance = vault.convertToShares(senderAssets);
     receiverBalance = currentShares - senderBalance;
