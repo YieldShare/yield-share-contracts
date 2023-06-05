@@ -28,6 +28,6 @@ contract UnitYieldShareDeposit is Base {
 
     _yieldShare.depositAssets(_assets);
 
-    assertEq(_assets, _yieldShare.balances(_caller));
+    assertEq(_assets, _yieldShare.getShares(_caller));
   }
 }

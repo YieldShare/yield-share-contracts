@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {ERC4626} from 'solmate/mixins/ERC4626.sol';
+import {ERC4626, ERC20} from 'solmate/mixins/ERC4626.sol';
 
 /**
  * @title Yield Share Contract
- * @author agusduha & alanbenju
+ * @author YieldShare
  * @notice This is the main contract for the yield share protocol
  */
 interface IYieldShare {
@@ -26,17 +26,11 @@ interface IYieldShare {
    */
   event SharesWithdrawn(address indexed user, uint256 shares);
 
-  event YieldSharingStarted(
-    bytes32 indexed shareId, address indexed from, address indexed to, uint256 shares, uint256 assets, uint8 percentage
-  );
+  event YieldSharingStarted(address indexed from, address indexed to, uint256 shares, uint256 assets, uint8 percentage);
 
-  event YieldSharingStopped(
-    bytes32 indexed shareId, address indexed from, address indexed to, uint256 senderBalance, uint256 receiverBalance
-  );
+  event YieldSharingStopped(address indexed from, address indexed to, uint256 senderBalance, uint256 receiverBalance);
 
-  event YieldSharingCollected(
-    bytes32 indexed shareId, address indexed from, address indexed to, uint256 senderBalance, uint256 receiverBalance
-  );
+  event YieldSharingCollected(address indexed from, address indexed to, uint256 senderBalance, uint256 receiverBalance);
 
   /*///////////////////////////////////////////////////////////////
                             ERRORS
@@ -61,11 +55,9 @@ interface IYieldShare {
                             VARIABLES
   //////////////////////////////////////////////////////////////*/
 
+  function token() external view returns (ERC20 token);
+
   function vault() external view returns (ERC4626 vault);
-
-  function balances(address user) external view returns (uint256 balance);
-
-  function yieldShares(bytes32 shareId) external view returns (uint256 shares, uint256 lastAssets, uint8 percentage);
 
   /*///////////////////////////////////////////////////////////////
                             LOGIC
@@ -89,5 +81,12 @@ interface IYieldShare {
                             VIEW
   //////////////////////////////////////////////////////////////*/
 
-  function balanceOf(bytes32 shareId) external view returns (uint256 senderBalance, uint256 receiverBalance);
+  function balanceOf(address from, address to) external view returns (uint256 senderBalance, uint256 receiverBalance);
+
+  function getShares(address user) external view returns (uint256 shares);
+
+  function getYieldSharing(
+    address from,
+    address to
+  ) external view returns (uint256 shares, uint256 lastAssets, uint8 percentage);
 }

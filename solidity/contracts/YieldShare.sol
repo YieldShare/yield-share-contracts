@@ -2,29 +2,19 @@
 pragma solidity 0.8.17;
 
 import {IYieldShare} from '../interfaces/IYieldShare.sol';
-import {ERC20} from 'solmate/tokens/ERC20.sol';
-import {ERC4626} from 'solmate/mixins/ERC4626.sol';
+import {ERC4626, ERC20} from 'solmate/mixins/ERC4626.sol';
 import {SafeTransferLib} from 'solmate/utils/SafeTransferLib.sol';
-import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
+import {Balance} from './storage/Balance.sol';
+import {YieldSharing} from './storage/YieldSharing.sol';
 
 contract YieldShare is IYieldShare {
   using SafeTransferLib for ERC20;
   using SafeTransferLib for ERC4626;
-  using FixedPointMathLib for uint256;
+  using Balance for Balance.Data;
+  using YieldSharing for YieldSharing.Data;
 
   ERC20 public immutable token;
   ERC4626 public immutable vault;
-
-  mapping(address => uint256) public balances;
-
-  struct Share {
-    uint256 shares;
-    uint256 lastAssets;
-    uint8 percentage;
-  }
-
-  // shareId => Share
-  mapping(bytes32 => Share) public yieldShares;
 
   constructor(ERC20 _token, ERC4626 _vault) {
     token = _token;
@@ -48,16 +38,16 @@ contract YieldShare is IYieldShare {
     uint256 shares = vault.deposit({assets: amount, receiver: address(this)});
 
     // Store sender shares
-    balances[msg.sender] += shares;
+    Balance.load(msg.sender).increase(shares);
 
-    emit SharesDeposited(msg.sender, shares); // @audit emit AssetsDeposited?
+    emit SharesDeposited(msg.sender, shares);
   }
 
   function withdrawAssets(uint256 shares) external override {
     if (shares == 0) revert InvalidAmount();
 
     // Decrease sender shares, implicit check for enough balance
-    balances[msg.sender] -= shares;
+    Balance.load(msg.sender).decrease(shares);
 
     // Withdraw from vault
     vault.redeem({shares: shares, receiver: msg.sender, owner: address(this)});
@@ -72,7 +62,7 @@ contract YieldShare is IYieldShare {
     vault.safeTransferFrom({from: msg.sender, to: address(this), amount: amount});
 
     // Store sender shares
-    balances[msg.sender] += amount;
+    Balance.load(msg.sender).increase(amount);
 
     emit SharesDeposited(msg.sender, amount);
   }
@@ -81,7 +71,7 @@ contract YieldShare is IYieldShare {
     if (shares == 0) revert InvalidAmount();
 
     // Decrease sender shares, implicit check for enough balance
-    balances[msg.sender] -= shares;
+    Balance.load(msg.sender).decrease(shares);
 
     // Transfer vault shares
     vault.safeTransfer({to: msg.sender, amount: shares});
@@ -100,90 +90,73 @@ contract YieldShare is IYieldShare {
     // @audit check not started yet
 
     // Decrease sender shares, implicit check for enough balance
-    balances[msg.sender] -= shares;
+    Balance.load(msg.sender).decrease(shares);
 
+    // Calculate current shares value
     uint256 assets = vault.convertToAssets(shares);
 
-    Share memory yieldShare = Share({shares: shares, lastAssets: assets, percentage: percentage});
+    // Start sharing yield
+    YieldSharing.load(msg.sender, to).start(shares, assets, percentage);
 
-    bytes32 shareId = _getShareId(msg.sender, to);
-
-    yieldShares[shareId] = yieldShare;
-
-    emit YieldSharingStarted(shareId, msg.sender, to, shares, assets, percentage);
+    emit YieldSharingStarted(msg.sender, to, shares, assets, percentage);
   }
 
   function stopYieldSharing(address to) external override {
     if (to == address(0)) revert InvalidAddress();
 
-    bytes32 shareId = _getShareId(msg.sender, to);
-    Share storage yieldShare = yieldShares[shareId];
+    YieldSharing.Data storage yieldSharing = YieldSharing.load(msg.sender, to);
 
-    (uint256 senderBalance, uint256 receiverBalance,) = _balanceOf(yieldShare);
+    // Calculate current balance
+    (uint256 senderBalance, uint256 receiverBalance,) = yieldSharing.balanceOf(vault);
 
-    balances[to] += receiverBalance;
-    balances[msg.sender] += senderBalance;
+    // Update balances
+    Balance.load(to).increase(receiverBalance);
+    Balance.load(msg.sender).increase(senderBalance);
 
-    yieldShare.shares = 0;
-    yieldShare.lastAssets = 0;
-    yieldShare.percentage = 0;
+    // Stop sharing yield
+    yieldSharing.stop();
 
-    emit YieldSharingStopped(shareId, msg.sender, to, senderBalance, receiverBalance);
+    emit YieldSharingStopped(msg.sender, to, senderBalance, receiverBalance);
   }
 
   function collectYieldSharing(address from, address to) external override {
     if (from == address(0) || to == address(0)) revert InvalidAddress();
 
-    bytes32 shareId = _getShareId(from, to);
-    Share storage yieldShare = yieldShares[shareId];
+    YieldSharing.Data storage yieldSharing = YieldSharing.load(msg.sender, to);
 
-    (uint256 senderBalance, uint256 receiverBalance, uint256 senderAssets) = _balanceOf(yieldShare);
+    // Calculate current balance
+    (uint256 senderBalance, uint256 receiverBalance, uint256 senderAssets) = yieldSharing.balanceOf(vault);
 
-    balances[to] += receiverBalance;
+    // Update receiver balance
+    Balance.load(to).increase(receiverBalance);
 
-    yieldShare.shares = senderBalance;
-    yieldShare.lastAssets = senderAssets;
+    // Start sharing yield with updated shares
+    yieldSharing.start(senderBalance, senderAssets, yieldSharing.percentage);
 
-    emit YieldSharingCollected(shareId, msg.sender, to, senderBalance, receiverBalance);
-  }
-
-  /*///////////////////////////////////////////////////////////////
-                      INTERNAL FUNCTIONS
-  //////////////////////////////////////////////////////////////*/
-
-  function _getShareId(address from, address to) private pure returns (bytes32 shareId) {
-    shareId = keccak256(abi.encode(from, to));
-  }
-
-  function _balanceOf(Share storage yieldShare)
-    private
-    view
-    returns (uint256 senderBalance, uint256 receiverBalance, uint256 senderAssets)
-  {
-    uint256 currentShares = yieldShare.shares;
-    uint256 currentAssets = vault.convertToAssets(currentShares);
-    uint256 lastAssets = yieldShare.lastAssets;
-
-    uint256 diff = currentAssets < lastAssets ? 0 : currentAssets - lastAssets;
-    uint8 receiverPercentage = yieldShare.percentage;
-
-    uint256 receiverAssets = diff.mulDivDown(receiverPercentage, 100);
-    senderAssets = currentAssets - receiverAssets;
-
-    if (receiverAssets == 0) return (currentShares, 0, currentAssets);
-
-    uint256 pricePerShare = currentAssets.divWadDown(currentShares);
-
-    senderBalance = senderAssets.divWadDown(pricePerShare);
-    receiverBalance = currentShares - senderBalance;
+    emit YieldSharingCollected(msg.sender, to, senderBalance, receiverBalance);
   }
 
   /*///////////////////////////////////////////////////////////////
                       VIEW FUNCTIONS
   //////////////////////////////////////////////////////////////*/
 
-  function balanceOf(bytes32 shareId) external view override returns (uint256 senderBalance, uint256 receiverBalance) {
-    Share storage yieldShare = yieldShares[shareId];
-    (senderBalance, receiverBalance,) = _balanceOf(yieldShare);
+  function balanceOf(
+    address from,
+    address to
+  ) external view override returns (uint256 senderBalance, uint256 receiverBalance) {
+    YieldSharing.Data storage yieldSharing = YieldSharing.load(from, to);
+    (senderBalance, receiverBalance,) = yieldSharing.balanceOf(vault);
+  }
+
+  function getShares(address user) external view returns (uint256 shares) {
+    return Balance.load(user).shares;
+  }
+
+  function getYieldSharing(
+    address from,
+    address to
+  ) external view returns (uint256 shares, uint256 lastAssets, uint8 percentage) {
+    YieldSharing.Data storage yieldSharing = YieldSharing.load(from, to);
+    return (yieldSharing.shares, yieldSharing.lastAssets, yieldSharing.percentage);
   }
 }

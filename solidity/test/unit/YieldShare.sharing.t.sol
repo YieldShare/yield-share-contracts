@@ -6,9 +6,7 @@ import {ERC4626} from 'solmate/mixins/ERC4626.sol';
 import {IYieldShare} from 'contracts/YieldShare.sol';
 
 contract UnitYieldSharing is Base {
-  event YieldSharingStarted(
-    bytes32 indexed shareId, address indexed from, address indexed to, uint256 shares, uint256 assets, uint8 percentage
-  );
+  event YieldSharingStarted(address indexed from, address indexed to, uint256 shares, uint256 assets, uint8 percentage);
 
   function test_RevertIfZeroAmount() public {
     vm.expectRevert(IYieldShare.InvalidAmount.selector);
@@ -44,25 +42,24 @@ contract UnitYieldSharing is Base {
 
     // Mock convertToAssets call
     vm.mockCall(address(_vault), abi.encodeWithSelector(ERC4626.convertToAssets.selector), abi.encode(_shares));
-    bytes32 shareId = keccak256(abi.encode(_caller, _to));
 
     // Expect call to emit event
-    vm.expectEmit(true, true, true, true);
-    emit YieldSharingStarted(shareId, _caller, _to, _shares, _shares, _percentage);
+    vm.expectEmit(true, true, false, true);
+    emit YieldSharingStarted(_caller, _to, _shares, _shares, _percentage);
 
     // Start sharing yield
     _yieldShare.startYieldSharing(_shares, _to, _percentage);
 
     // Asserts
-    assertEq(0, _yieldShare.balances(_caller));
-    assertEq(0, _yieldShare.balances(_to));
+    assertEq(0, _yieldShare.getShares(_caller));
+    assertEq(0, _yieldShare.getShares(_to));
 
-    (uint256 shares, uint256 lastAssets, uint8 percentage) = _yieldShare.yieldShares(shareId);
+    (uint256 shares, uint256 lastAssets, uint8 percentage) = _yieldShare.getYieldSharing(_caller, _to);
     assertEq(_shares, shares);
     assertEq(_shares, lastAssets);
     assertEq(_percentage, percentage);
 
-    (uint256 senderBalance, uint256 receiverBalance) = _yieldShare.balanceOf(shareId);
+    (uint256 senderBalance, uint256 receiverBalance) = _yieldShare.balanceOf(_caller, _to);
     assertEq(_shares, senderBalance);
     assertEq(0, receiverBalance);
   }
