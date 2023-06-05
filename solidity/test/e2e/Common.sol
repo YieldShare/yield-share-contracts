@@ -18,13 +18,14 @@ contract CommonE2EBase is DSTestFull {
   ERC20 internal _dai = ERC20(0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063); // Polygon DAI
   AaveV3ERC4626Factory internal _aaveV3Factory = AaveV3ERC4626Factory(0xd847253c30502Af5Ae84275c52f24B438FDd9fE7); // Polygon Factory
 
+  ERC4626 internal _vault;
   IYieldShare internal _yieldShare;
 
   function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('polygon'), _FORK_BLOCK);
     vm.prank(_owner);
 
-    ERC4626 _vault = ERC4626(address(_aaveV3Factory.createERC4626(_dai)));
+    _vault = ERC4626(address(_aaveV3Factory.createERC4626(_dai)));
 
     _yieldShare = new YieldShare(_dai, _vault);
   }

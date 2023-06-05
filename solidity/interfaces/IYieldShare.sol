@@ -75,6 +75,10 @@ interface IYieldShare {
 
   function withdrawAssets(uint256 shares) external;
 
+  function depositShares(uint256 amount) external;
+
+  function withdrawShares(uint256 shares) external;
+
   function startYieldSharing(uint256 shares, address to, uint8 percentage) external;
 
   function stopYieldSharing(address to) external;
@@ -85,5 +89,5 @@ interface IYieldShare {
                             VIEW
   //////////////////////////////////////////////////////////////*/
 
-  function balanceOf(bytes32 shareId) external view returns (uint256, uint256);
+  function balanceOf(bytes32 shareId) external view returns (uint256 senderBalance, uint256 receiverBalance);
 }

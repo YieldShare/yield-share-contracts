@@ -23,6 +23,19 @@ contract E2EYieldShare is CommonE2EBase {
     assertEq(_yieldShare.balances(_daiWhale), _ASSETS);
   }
 
+  function test_DepositShares() public {
+    // Setup
+    _dai.approve(address(_vault), _ASSETS);
+    _vault.deposit({assets: _ASSETS, receiver: _daiWhale});
+
+    // Deposit
+    _vault.approve(address(_yieldShare), _ASSETS);
+    _yieldShare.depositShares(_ASSETS);
+
+    // Check current balance
+    assertEq(_yieldShare.balances(_daiWhale), _ASSETS);
+  }
+
   function test_StartYieldSharing() public {
     // Setup
     _dai.approve(address(_yieldShare), _ASSETS);

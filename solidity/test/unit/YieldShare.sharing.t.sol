@@ -42,9 +42,8 @@ contract UnitYieldSharing is Base {
     vm.mockCall(address(_vault), abi.encodeWithSelector(ERC4626.deposit.selector), abi.encode(_shares));
     _yieldShare.depositAssets(_shares);
 
-    // Mock convert calls
+    // Mock convertToAssets call
     vm.mockCall(address(_vault), abi.encodeWithSelector(ERC4626.convertToAssets.selector), abi.encode(_shares));
-    vm.mockCall(address(_vault), abi.encodeWithSelector(ERC4626.convertToShares.selector), abi.encode(_shares));
     bytes32 shareId = keccak256(abi.encode(_caller, _to));
 
     // Expect call to emit event
@@ -63,9 +62,8 @@ contract UnitYieldSharing is Base {
     assertEq(_shares, lastAssets);
     assertEq(_percentage, percentage);
 
-    // @audit fix balanceOf
-    // (uint256 senderBalance, uint256 receiverBalance) = _yieldShare.balanceOf(shareId);
-    // assertEq(_shares, senderBalance);
-    // assertEq(0, receiverBalance);
+    (uint256 senderBalance, uint256 receiverBalance) = _yieldShare.balanceOf(shareId);
+    assertEq(_shares, senderBalance);
+    assertEq(0, receiverBalance);
   }
 }
