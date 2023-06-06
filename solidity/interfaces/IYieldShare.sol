@@ -51,6 +51,11 @@ interface IYieldShare {
    */
   error InvalidPercentage();
 
+  /**
+   * @notice Throws if trying to start a yield sharing that has already started
+   */
+  error AlreadyActive();
+
   /*///////////////////////////////////////////////////////////////
                             VARIABLES
   //////////////////////////////////////////////////////////////*/

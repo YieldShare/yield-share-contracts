@@ -32,6 +32,10 @@ library YieldSharing {
     self.percentage = 0;
   }
 
+  function isActive(Data storage self) internal view returns (bool active) {
+    return self.shares != 0;
+  }
+
   function balanceOf(
     Data storage self,
     ERC4626 vault

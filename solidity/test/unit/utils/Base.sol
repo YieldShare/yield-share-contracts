@@ -19,5 +19,7 @@ abstract contract Base is DSTestFull {
     // Mock ERC20 calls
     vm.mockCall(address(_token), abi.encodeWithSelector(ERC20.transferFrom.selector), abi.encode(true));
     vm.mockCall(address(_token), abi.encodeWithSelector(ERC20.approve.selector), abi.encode(true));
+    vm.mockCall(address(_vault), abi.encodeWithSelector(ERC20.transferFrom.selector), abi.encode(true));
+    vm.mockCall(address(_vault), abi.encodeWithSelector(ERC20.approve.selector), abi.encode(true));
   }
 }

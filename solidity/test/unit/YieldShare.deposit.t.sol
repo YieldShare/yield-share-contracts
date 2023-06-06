@@ -8,7 +8,7 @@ import {IYieldShare} from 'contracts/YieldShare.sol';
 contract UnitYieldShareDeposit is Base {
   event SharesDeposited(address indexed user, uint256 shares);
 
-  function test_RevertIfZeroAmount() public {
+  function test_RevertIfZeroAmountWhenDepositingAssets() public {
     vm.expectRevert(IYieldShare.InvalidAmount.selector);
     _yieldShare.depositAssets(0);
   }
@@ -28,6 +28,26 @@ contract UnitYieldShareDeposit is Base {
 
     _yieldShare.depositAssets(_assets);
 
-    assertEq(_assets, _yieldShare.getShares(_caller));
+    assertEq(_yieldShare.getShares(_caller), _assets);
+  }
+
+  function test_RevertIfZeroAmountWhenDepositingShares() public {
+    vm.expectRevert(IYieldShare.InvalidAmount.selector);
+    _yieldShare.depositShares(0);
+  }
+
+  function test_DepositShares(address _caller, uint256 _shares) public {
+    // VM configs
+    vm.assume(_caller != address(0));
+    vm.assume(_shares != 0);
+    vm.prank(_caller);
+
+    // Expect call to emit event
+    vm.expectEmit(true, false, false, true);
+    emit SharesDeposited(_caller, _shares);
+
+    _yieldShare.depositShares(_shares);
+
+    assertEq(_yieldShare.getShares(_caller), _shares);
   }
 }

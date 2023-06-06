@@ -51,16 +51,16 @@ contract UnitYieldSharing is Base {
     _yieldShare.startYieldSharing(_shares, _to, _percentage);
 
     // Asserts
-    assertEq(0, _yieldShare.getShares(_caller));
-    assertEq(0, _yieldShare.getShares(_to));
+    assertEq(_yieldShare.getShares(_caller), 0);
+    assertEq(_yieldShare.getShares(_to), 0);
 
     (uint256 shares, uint256 lastAssets, uint8 percentage) = _yieldShare.getYieldSharing(_caller, _to);
-    assertEq(_shares, shares);
-    assertEq(_shares, lastAssets);
-    assertEq(_percentage, percentage);
+    assertEq(shares, _shares);
+    assertEq(lastAssets, _shares);
+    assertEq(percentage, _percentage);
 
     (uint256 senderBalance, uint256 receiverBalance) = _yieldShare.balanceOf(_caller, _to);
-    assertEq(_shares, senderBalance);
-    assertEq(0, receiverBalance);
+    assertEq(senderBalance, _shares);
+    assertEq(receiverBalance, 0);
   }
 }

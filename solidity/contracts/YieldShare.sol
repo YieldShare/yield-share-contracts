@@ -87,7 +87,10 @@ contract YieldShare is IYieldShare {
     if (shares == 0) revert InvalidAmount();
     if (to == address(0) && msg.sender != to) revert InvalidAddress();
     if (percentage == 0 || percentage > 100) revert InvalidPercentage();
-    // @audit check not started yet
+
+    YieldSharing.Data storage yieldSharing = YieldSharing.load(msg.sender, to);
+
+    if (yieldSharing.isActive()) revert AlreadyActive();
 
     // Decrease sender shares, implicit check for enough balance
     Balance.load(msg.sender).decrease(shares);
@@ -96,7 +99,7 @@ contract YieldShare is IYieldShare {
     uint256 assets = VAULT.convertToAssets(shares);
 
     // Start sharing yield
-    YieldSharing.load(msg.sender, to).start(shares, assets, percentage);
+    yieldSharing.start(shares, assets, percentage);
 
     emit YieldSharingStarted(msg.sender, to, shares, assets, percentage);
   }
@@ -149,7 +152,8 @@ contract YieldShare is IYieldShare {
   }
 
   function getShares(address user) external view returns (uint256 shares) {
-    return Balance.load(user).shares;
+    Balance.Data storage balance = Balance.load(user);
+    return balance.shares;
   }
 
   function getYieldSharing(
