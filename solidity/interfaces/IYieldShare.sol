@@ -55,9 +55,9 @@ interface IYieldShare {
                             VARIABLES
   //////////////////////////////////////////////////////////////*/
 
-  function token() external view returns (ERC20 token);
+  function TOKEN() external view returns (ERC20 token);
 
-  function vault() external view returns (ERC4626 vault);
+  function VAULT() external view returns (ERC4626 vault);
 
   /*///////////////////////////////////////////////////////////////
                             LOGIC

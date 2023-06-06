@@ -58,7 +58,7 @@ jobs:
           touch .env
           echo MAINNET_RPC="${{ secrets.MAINNET_RPC }}" >> .env
           echo GOERLI_RPC="${{ secrets.GOERLI_RPC }}" >> .env
-          echo GOERLI_RPC="${{ secrets.POLYGON_RPC }}" >> .env
+          echo POLYGON_RPC="${{ secrets.POLYGON_RPC }}" >> .env
           cat .env
 
       - name: Run tests

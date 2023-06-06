@@ -10,12 +10,12 @@ contract UnitYieldShareConstructor is Base {
   function test_TokenSet(ERC20 _token) public {
     _yieldShare = new YieldShare(_token, _vault);
 
-    assertEq(address(_yieldShare.token()), address(_token));
+    assertEq(address(_yieldShare.TOKEN()), address(_token));
   }
 
   function test_VaultSet(ERC4626 _vault) public {
     _yieldShare = new YieldShare(_token, _vault);
 
-    assertEq(address(_yieldShare.vault()), address(_vault));
+    assertEq(address(_yieldShare.VAULT()), address(_vault));
   }
 }

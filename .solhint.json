@@ -13,7 +13,6 @@
     "no-inline-assembly": "off",
     "no-empty-blocks": "off",
     "private-vars-leading-underscore": ["warn", { "strict": false }],
-    "defi-wonderland/non-state-vars-leading-underscore": ["warn"],
     "defi-wonderland/contract-data-order": ["warn"],
     "defi-wonderland/enum-name-camelcase": ["warn"],
     "defi-wonderland/immutable-name-snakecase": ["warn"],

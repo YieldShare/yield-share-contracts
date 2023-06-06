@@ -13,12 +13,12 @@ contract YieldShare is IYieldShare {
   using Balance for Balance.Data;
   using YieldSharing for YieldSharing.Data;
 
-  ERC20 public immutable token;
-  ERC4626 public immutable vault;
+  ERC20 public immutable TOKEN;
+  ERC4626 public immutable VAULT;
 
   constructor(ERC20 _token, ERC4626 _vault) {
-    token = _token;
-    vault = _vault;
+    TOKEN = _token;
+    VAULT = _vault;
   }
 
   /*///////////////////////////////////////////////////////////////
@@ -29,13 +29,13 @@ contract YieldShare is IYieldShare {
     if (amount == 0) revert InvalidAmount();
 
     // Transfer token from the sender
-    token.safeTransferFrom({from: msg.sender, to: address(this), amount: amount});
+    TOKEN.safeTransferFrom({from: msg.sender, to: address(this), amount: amount});
 
     // Approve token to vault
-    token.approve({spender: address(vault), amount: amount}); // @audit Approve type(uint256).max once
+    TOKEN.approve({spender: address(VAULT), amount: amount}); // @audit Approve type(uint256).max once
 
     // Deposit into vault
-    uint256 shares = vault.deposit({assets: amount, receiver: address(this)});
+    uint256 shares = VAULT.deposit({assets: amount, receiver: address(this)});
 
     // Store sender shares
     Balance.load(msg.sender).increase(shares);
@@ -50,7 +50,7 @@ contract YieldShare is IYieldShare {
     Balance.load(msg.sender).decrease(shares);
 
     // Withdraw from vault
-    vault.redeem({shares: shares, receiver: msg.sender, owner: address(this)});
+    VAULT.redeem({shares: shares, receiver: msg.sender, owner: address(this)});
 
     emit SharesWithdrawn(msg.sender, shares);
   }
@@ -59,7 +59,7 @@ contract YieldShare is IYieldShare {
     if (amount == 0) revert InvalidAmount();
 
     // Transfer shares from the sender
-    vault.safeTransferFrom({from: msg.sender, to: address(this), amount: amount});
+    VAULT.safeTransferFrom({from: msg.sender, to: address(this), amount: amount});
 
     // Store sender shares
     Balance.load(msg.sender).increase(amount);
@@ -74,7 +74,7 @@ contract YieldShare is IYieldShare {
     Balance.load(msg.sender).decrease(shares);
 
     // Transfer vault shares
-    vault.safeTransfer({to: msg.sender, amount: shares});
+    VAULT.safeTransfer({to: msg.sender, amount: shares});
 
     emit SharesWithdrawn(msg.sender, shares);
   }
@@ -93,7 +93,7 @@ contract YieldShare is IYieldShare {
     Balance.load(msg.sender).decrease(shares);
 
     // Calculate current shares value
-    uint256 assets = vault.convertToAssets(shares);
+    uint256 assets = VAULT.convertToAssets(shares);
 
     // Start sharing yield
     YieldSharing.load(msg.sender, to).start(shares, assets, percentage);
@@ -107,7 +107,7 @@ contract YieldShare is IYieldShare {
     YieldSharing.Data storage yieldSharing = YieldSharing.load(msg.sender, to);
 
     // Calculate current balance
-    (uint256 senderBalance, uint256 receiverBalance,) = yieldSharing.balanceOf(vault);
+    (uint256 senderBalance, uint256 receiverBalance,) = yieldSharing.balanceOf(VAULT);
 
     // Update balances
     Balance.load(to).increase(receiverBalance);
@@ -125,7 +125,7 @@ contract YieldShare is IYieldShare {
     YieldSharing.Data storage yieldSharing = YieldSharing.load(msg.sender, to);
 
     // Calculate current balance
-    (uint256 senderBalance, uint256 receiverBalance, uint256 senderAssets) = yieldSharing.balanceOf(vault);
+    (uint256 senderBalance, uint256 receiverBalance, uint256 senderAssets) = yieldSharing.balanceOf(VAULT);
 
     // Update receiver balance
     Balance.load(to).increase(receiverBalance);
@@ -145,7 +145,7 @@ contract YieldShare is IYieldShare {
     address to
   ) external view override returns (uint256 senderBalance, uint256 receiverBalance) {
     YieldSharing.Data storage yieldSharing = YieldSharing.load(from, to);
-    (senderBalance, receiverBalance,) = yieldSharing.balanceOf(vault);
+    (senderBalance, receiverBalance,) = yieldSharing.balanceOf(VAULT);
   }
 
   function getShares(address user) external view returns (uint256 shares) {
