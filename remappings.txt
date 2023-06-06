@@ -1,7 +1,6 @@
 ds-test/=lib/ds-test/src
 prb/test/=lib/prb-test/src/
 forge-std/=lib/forge-std/src
-isolmate/=lib/isolmate/src
 solmate/=lib/solmate/src
 yield-daddy/=lib/yield-daddy/src
 
