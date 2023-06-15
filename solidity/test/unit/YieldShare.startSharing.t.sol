@@ -5,7 +5,7 @@ import {Base} from 'test/unit/utils/Base.sol';
 import {ERC4626} from 'solmate/mixins/ERC4626.sol';
 import {IYieldShare} from 'contracts/YieldShare.sol';
 
-contract UnitYieldSharing is Base {
+contract UnitYieldShareStart is Base {
   event YieldSharingStarted(address indexed from, address indexed to, uint256 shares, uint256 assets, uint8 percentage);
 
   function test_RevertIfZeroAmount() public {
@@ -28,6 +28,18 @@ contract UnitYieldSharing is Base {
     _yieldShare.startYieldSharing(1, address(1), 101);
   }
 
+  function test_RevertIfYieldSharingAlreadyStarted() public {
+    // Mock deposit assets
+    vm.mockCall(address(_vault), abi.encodeWithSelector(ERC4626.deposit.selector), abi.encode(1));
+    _yieldShare.depositAssets(1);
+
+    vm.mockCall(address(_vault), abi.encodeWithSelector(ERC4626.convertToAssets.selector), abi.encode(1));
+    _yieldShare.startYieldSharing(1, address(1), 50);
+
+    vm.expectRevert(IYieldShare.AlreadyActive.selector);
+    _yieldShare.startYieldSharing(1, address(1), 50);
+  }
+
   function test_StartYieldSharing(address _caller, uint256 _shares, address _to, uint8 _percentage) public {
     // VM configs
     vm.assume(_caller != address(0));
@@ -36,7 +48,7 @@ contract UnitYieldSharing is Base {
     vm.assume(_percentage > 0 && _percentage <= 100);
     vm.startPrank(_caller);
 
-    // Mock deposit shares
+    // Mock deposit assets
     vm.mockCall(address(_vault), abi.encodeWithSelector(ERC4626.deposit.selector), abi.encode(_shares));
     _yieldShare.depositAssets(_shares);
 
