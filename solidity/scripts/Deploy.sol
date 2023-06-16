@@ -6,9 +6,9 @@ import {YieldShare} from 'contracts/YieldShare.sol';
 import {ERC4626, ERC20} from 'solmate/mixins/ERC4626.sol';
 
 abstract contract Deploy is Script {
-  function _deploy(ERC20 token, ERC4626 vault) internal {
+  function _deploy(ERC20 token, ERC4626 vault, address treasury) internal {
     vm.startBroadcast();
-    new YieldShare(token, vault);
+    new YieldShare(token, vault, treasury);
     vm.stopBroadcast();
   }
 }
