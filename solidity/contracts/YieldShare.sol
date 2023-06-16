@@ -15,10 +15,12 @@ contract YieldShare is IYieldShare {
 
   ERC20 public immutable TOKEN;
   ERC4626 public immutable VAULT;
+  address public immutable TREASURY;
 
-  constructor(ERC20 _token, ERC4626 _vault) {
+  constructor(ERC20 _token, ERC4626 _vault, address _treasury) {
     TOKEN = _token;
     VAULT = _vault;
+    TREASURY = _treasury;
   }
 
   /*///////////////////////////////////////////////////////////////
@@ -86,7 +88,7 @@ contract YieldShare is IYieldShare {
   function startYieldSharing(uint256 shares, address to, uint8 percentage) external override {
     if (shares == 0) revert InvalidAmount();
     if (to == address(0) && msg.sender != to) revert InvalidAddress();
-    if (percentage == 0 || percentage > 100) revert InvalidPercentage();
+    if (percentage == 0 || percentage > 95) revert InvalidPercentage();
 
     YieldSharing.Data storage yieldSharing = YieldSharing.load(msg.sender, to);
 
@@ -110,10 +112,11 @@ contract YieldShare is IYieldShare {
     YieldSharing.Data storage yieldSharing = YieldSharing.load(msg.sender, to);
 
     // Calculate current balance
-    (uint256 senderBalance, uint256 receiverBalance,) = yieldSharing.balanceOf(VAULT);
+    (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance,) = yieldSharing.balanceOf(VAULT);
 
     // Update balances
     Balance.load(to).increase(receiverBalance);
+    Balance.load(TREASURY).increase(feeBalance);
     Balance.load(msg.sender).increase(senderBalance);
 
     // Stop sharing yield
@@ -128,10 +131,12 @@ contract YieldShare is IYieldShare {
     YieldSharing.Data storage yieldSharing = YieldSharing.load(msg.sender, to);
 
     // Calculate current balance
-    (uint256 senderBalance, uint256 receiverBalance, uint256 senderAssets) = yieldSharing.balanceOf(VAULT);
+    (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance, uint256 senderAssets) =
+      yieldSharing.balanceOf(VAULT);
 
     // Update receiver balance
     Balance.load(to).increase(receiverBalance);
+    Balance.load(TREASURY).increase(feeBalance);
 
     // Start sharing yield with updated shares
     yieldSharing.start(senderBalance, senderAssets, yieldSharing.percentage);
@@ -146,9 +151,9 @@ contract YieldShare is IYieldShare {
   function balanceOf(
     address from,
     address to
-  ) external view override returns (uint256 senderBalance, uint256 receiverBalance) {
+  ) external view override returns (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance) {
     YieldSharing.Data storage yieldSharing = YieldSharing.load(from, to);
-    (senderBalance, receiverBalance,) = yieldSharing.balanceOf(VAULT);
+    (senderBalance, receiverBalance, feeBalance,) = yieldSharing.balanceOf(VAULT);
   }
 
   function getShares(address user) external view returns (uint256 shares) {

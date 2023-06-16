@@ -50,7 +50,7 @@ jobs:
       - name: Install forge dependencies
         run: forge install
 
-      - name: Precompile using 0.8.14 and via-ir=false
+      - name: Precompile using 0.8.17 and via-ir=false
         run: yarn build
 
       - name: "Create env file"
@@ -81,7 +81,7 @@ jobs:
       - name: Install forge dependencies
         run: forge install
 
-      - name: Precompile using 0.8.14 and via-ir=true
+      - name: Precompile using 0.8.17 and via-ir=true
         run: yarn build:optimized
 
       - name: Run tests

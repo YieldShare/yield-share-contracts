@@ -14,7 +14,7 @@ abstract contract Base is DSTestFull {
 
   function setUp() public virtual {
     vm.prank(_owner);
-    _yieldShare = new YieldShare(_token, _vault);
+    _yieldShare = new YieldShare(_token, _vault, _owner);
 
     // Mock ERC20 calls
     vm.mockCall(address(_token), abi.encodeWithSelector(ERC20.transferFrom.selector), abi.encode(true));

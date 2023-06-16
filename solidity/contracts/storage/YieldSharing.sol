@@ -7,6 +7,8 @@ import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
 library YieldSharing {
   using FixedPointMathLib for uint256;
 
+  uint8 private constant _FEE_PERCENTAGE = 5;
+
   struct Data {
     uint256 shares;
     uint256 lastAssets;
@@ -39,7 +41,7 @@ library YieldSharing {
   function balanceOf(
     Data storage self,
     ERC4626 vault
-  ) internal view returns (uint256 senderBalance, uint256 receiverBalance, uint256 senderAssets) {
+  ) internal view returns (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance, uint256 senderAssets) {
     uint256 currentShares = self.shares;
     uint256 currentAssets = vault.convertToAssets(currentShares);
     uint256 lastAssets = self.lastAssets;
@@ -48,13 +50,15 @@ library YieldSharing {
     uint8 receiverPercentage = self.percentage;
 
     uint256 receiverAssets = diff.mulDivDown(receiverPercentage, 100);
-    senderAssets = currentAssets - receiverAssets;
+    uint256 feeAssets = diff.mulDivDown(_FEE_PERCENTAGE, 100);
+    senderAssets = currentAssets - receiverAssets - feeAssets;
 
-    if (receiverAssets == 0) return (currentShares, 0, currentAssets);
+    if (receiverAssets == 0) return (currentShares, 0, 0, currentAssets);
 
     uint256 pricePerShare = currentAssets.divWadDown(currentShares);
 
     senderBalance = senderAssets.divWadDown(pricePerShare);
-    receiverBalance = currentShares - senderBalance;
+    receiverBalance = receiverAssets.divWadDown(pricePerShare);
+    feeBalance = currentShares - senderBalance - receiverBalance;
   }
 }

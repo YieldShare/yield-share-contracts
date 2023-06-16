@@ -27,6 +27,6 @@ contract CommonE2EBase is DSTestFull {
 
     _vault = ERC4626(address(_aaveV3Factory.createERC4626(_dai)));
 
-    _yieldShare = new YieldShare(_dai, _vault);
+    _yieldShare = new YieldShare(_dai, _vault, _owner);
   }
 }

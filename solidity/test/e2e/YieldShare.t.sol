@@ -48,6 +48,7 @@ contract E2EYieldShare is CommonE2EBase {
     // Check balances are both zero
     assertEq(_yieldShare.getShares(_daiWhale), 0);
     assertEq(_yieldShare.getShares(_user), 0);
+    assertEq(_yieldShare.getShares(_owner), 0);
 
     // Check yield sharing is correct
     (uint256 shares, uint256 lastAssets, uint8 percentage) = _yieldShare.getYieldSharing(_daiWhale, _user);
@@ -56,10 +57,11 @@ contract E2EYieldShare is CommonE2EBase {
     assertEq(percentage, _PERCENTAGE);
 
     // Check current balances
-    (uint256 senderBalance, uint256 receiverBalance) = _yieldShare.balanceOf(_daiWhale, _user);
+    (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance) = _yieldShare.balanceOf(_daiWhale, _user);
     assertEq(senderBalance, balance);
     assertEq(receiverBalance, 0);
-    assertEq(senderBalance + receiverBalance, balance);
+    assertEq(feeBalance, 0);
+    assertEq(senderBalance + receiverBalance + feeBalance, balance);
   }
 
   function test_StartYieldSharingThroughTime() public {
@@ -72,9 +74,10 @@ contract E2EYieldShare is CommonE2EBase {
     // Advance time
     vm.warp(block.timestamp + 86_400);
 
-    // Check balances are both zero
+    // Check balances are all zero
     assertEq(_yieldShare.getShares(_daiWhale), 0);
     assertEq(_yieldShare.getShares(_user), 0);
+    assertEq(_yieldShare.getShares(_owner), 0);
 
     // Check yield sharing is correct
     (uint256 shares, uint256 lastAssets, uint8 percentage) = _yieldShare.getYieldSharing(_daiWhale, _user);
@@ -83,13 +86,17 @@ contract E2EYieldShare is CommonE2EBase {
     assertEq(percentage, _PERCENTAGE);
 
     // Check current balances
-    (uint256 senderBalance, uint256 receiverBalance) = _yieldShare.balanceOf(_daiWhale, _user);
+    (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance) = _yieldShare.balanceOf(_daiWhale, _user);
     uint256 delta = balance / 100_000;
     assertLt(senderBalance, balance);
     assertGt(receiverBalance, 0);
+    assertGt(feeBalance, 0);
+
     assertAlmostEq(senderBalance, balance, delta);
     assertAlmostEq(receiverBalance, 0, delta);
-    assertEq(senderBalance + receiverBalance, balance);
+    assertAlmostEq(feeBalance, 0, delta);
+
+    assertEq(senderBalance + receiverBalance + feeBalance, balance);
   }
 
   function test_CollectYieldSharing() public {
@@ -106,7 +113,9 @@ contract E2EYieldShare is CommonE2EBase {
     // Check new balances
     assertEq(_yieldShare.getShares(_daiWhale), 0);
     assertGt(_yieldShare.getShares(_user), 0);
+
     assertAlmostEq(_yieldShare.getShares(_user), 0, delta);
+    assertAlmostEq(_yieldShare.getShares(_owner), 0, delta);
 
     // Check yield sharing is correct
     (uint256 shares, uint256 lastAssets, uint8 percentage) = _yieldShare.getYieldSharing(_daiWhale, _user);
@@ -117,11 +126,12 @@ contract E2EYieldShare is CommonE2EBase {
     assertEq(percentage, _PERCENTAGE);
 
     // Check current balances
-    (uint256 senderBalance, uint256 receiverBalance) = _yieldShare.balanceOf(_daiWhale, _user);
+    (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance) = _yieldShare.balanceOf(_daiWhale, _user);
     assertLt(senderBalance, balance);
     assertAlmostEq(senderBalance, balance, delta);
     assertEq(receiverBalance, 0);
-    assertEq(senderBalance + receiverBalance, shares);
+    assertEq(feeBalance, 0);
+    assertEq(senderBalance + receiverBalance + feeBalance, shares);
   }
 
   function test_StopYieldSharing() public {
@@ -138,8 +148,12 @@ contract E2EYieldShare is CommonE2EBase {
     // Check new balances
     assertLt(_yieldShare.getShares(_daiWhale), balance);
     assertAlmostEq(_yieldShare.getShares(_daiWhale), balance, delta);
+
     assertGt(_yieldShare.getShares(_user), 0);
     assertAlmostEq(_yieldShare.getShares(_user), 0, delta);
+
+    assertGt(_yieldShare.getShares(_owner), 0);
+    assertAlmostEq(_yieldShare.getShares(_owner), 0, delta);
 
     // Check yield sharing is correct
     (uint256 shares, uint256 lastAssets, uint8 percentage) = _yieldShare.getYieldSharing(_daiWhale, _user);
@@ -148,8 +162,9 @@ contract E2EYieldShare is CommonE2EBase {
     assertEq(percentage, 0);
 
     // Check current balances
-    (uint256 senderBalance, uint256 receiverBalance) = _yieldShare.balanceOf(_daiWhale, _user);
+    (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance) = _yieldShare.balanceOf(_daiWhale, _user);
     assertEq(senderBalance, 0);
     assertEq(receiverBalance, 0);
+    assertEq(feeBalance, 0);
   }
 }

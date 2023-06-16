@@ -26,7 +26,7 @@ contract UnitYieldShareStop is Base {
     vm.assume(_shares != 0);
     vm.assume(_to != address(0));
     vm.assume(_currentAssets < (type(uint256).max / 1e18));
-    vm.assume(_percentage > 0 && _percentage <= 100);
+    vm.assume(_percentage > 0 && _percentage <= 95);
     vm.startPrank(_caller);
 
     // Mock deposit shares
@@ -41,7 +41,7 @@ contract UnitYieldShareStop is Base {
 
     // Mock convertToAssets call after starting
     vm.mockCall(address(_vault), abi.encodeWithSelector(ERC4626.convertToAssets.selector), abi.encode(_currentAssets));
-    (uint256 senderBalance, uint256 receiverBalance) = _yieldShare.balanceOf(_caller, _to);
+    (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance) = _yieldShare.balanceOf(_caller, _to);
 
     // Expect call to emit event
     vm.expectEmit(true, true, false, true);
@@ -50,25 +50,33 @@ contract UnitYieldShareStop is Base {
     // Stop sharing yield
     _yieldShare.stopYieldSharing(_to);
 
-    // Asserts
-    uint256 callerShares = _yieldShare.getShares(_caller);
-    uint256 toShares = _yieldShare.getShares(_to);
+    {
+      // Asserts
+      uint256 callerShares = _yieldShare.getShares(_caller);
+      uint256 toShares = _yieldShare.getShares(_to);
+      uint256 feeShares = _yieldShare.getShares(_owner);
 
-    assertLte(callerShares, _shares);
-    assertGte(toShares, 0);
+      assertLte(callerShares, _shares);
+      assertGte(toShares, 0);
+      assertGte(feeShares, 0);
 
-    assertEq(callerShares, senderBalance);
-    assertEq(toShares, receiverBalance);
+      assertEq(callerShares, senderBalance);
+      assertEq(toShares, receiverBalance);
+      assertEq(feeShares, feeBalance);
 
-    assertEq(callerShares + toShares, _shares);
+      assertEq(callerShares + toShares + feeShares, _shares);
+    }
 
     (uint256 shares, uint256 lastAssets, uint8 percentage) = _yieldShare.getYieldSharing(_caller, _to);
     assertEq(shares, 0);
     assertEq(lastAssets, 0);
     assertEq(percentage, 0);
 
-    (uint256 senderBalanceAfter, uint256 receiverBalanceAfter) = _yieldShare.balanceOf(_caller, _to);
+    (uint256 senderBalanceAfter, uint256 receiverBalanceAfter, uint256 feeBalanceAfter) =
+      _yieldShare.balanceOf(_caller, _to);
+
     assertEq(senderBalanceAfter, 0);
     assertEq(receiverBalanceAfter, 0);
+    assertEq(feeBalanceAfter, 0);
   }
 }

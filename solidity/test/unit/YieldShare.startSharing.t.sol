@@ -45,7 +45,7 @@ contract UnitYieldShareStart is Base {
     vm.assume(_caller != address(0));
     vm.assume(_shares != 0);
     vm.assume(_to != address(0));
-    vm.assume(_percentage > 0 && _percentage <= 100);
+    vm.assume(_percentage > 0 && _percentage <= 95);
     vm.startPrank(_caller);
 
     // Mock deposit assets
@@ -65,14 +65,16 @@ contract UnitYieldShareStart is Base {
     // Asserts
     assertEq(_yieldShare.getShares(_caller), 0);
     assertEq(_yieldShare.getShares(_to), 0);
+    assertEq(_yieldShare.getShares(_owner), 0);
 
     (uint256 shares, uint256 lastAssets, uint8 percentage) = _yieldShare.getYieldSharing(_caller, _to);
     assertEq(shares, _shares);
     assertEq(lastAssets, _shares);
     assertEq(percentage, _percentage);
 
-    (uint256 senderBalance, uint256 receiverBalance) = _yieldShare.balanceOf(_caller, _to);
+    (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance) = _yieldShare.balanceOf(_caller, _to);
     assertEq(senderBalance, _shares);
     assertEq(receiverBalance, 0);
+    assertEq(feeBalance, 0);
   }
 }

@@ -86,7 +86,10 @@ interface IYieldShare {
                             VIEW
   //////////////////////////////////////////////////////////////*/
 
-  function balanceOf(address from, address to) external view returns (uint256 senderBalance, uint256 receiverBalance);
+  function balanceOf(
+    address from,
+    address to
+  ) external view returns (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance);
 
   function getShares(address user) external view returns (uint256 shares);
 

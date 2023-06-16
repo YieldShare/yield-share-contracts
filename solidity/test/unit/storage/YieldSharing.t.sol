@@ -68,7 +68,7 @@ contract UnitYieldSharing is DSTestFull {
     vm.assume(assets > 0);
     vm.assume(assets >= shares);
     vm.assume(currentAssets < (type(uint256).max / 1e18));
-    vm.assume(percentage > 0 && percentage <= 100);
+    vm.assume(percentage > 0 && percentage <= 95);
 
     _yieldSharing.start(shares, assets, percentage);
 
@@ -76,11 +76,14 @@ contract UnitYieldSharing is DSTestFull {
     ERC4626 _vault = ERC4626(_mockContract('vault'));
     vm.mockCall(address(_vault), abi.encodeWithSelector(ERC4626.convertToAssets.selector), abi.encode(currentAssets));
 
-    (uint256 senderBalance, uint256 receiverBalance, uint256 senderAssets) = _yieldSharing.balanceOf(_vault);
+    (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance, uint256 senderAssets) =
+      _yieldSharing.balanceOf(_vault);
 
-    assertEq(senderBalance + receiverBalance, shares);
+    assertEq(senderBalance + receiverBalance + feeBalance, shares);
+
     assertLte(senderBalance, shares, 'senderBalance > shares');
     assertLte(receiverBalance, shares, 'receiverBalance > shares');
+    assertLte(feeBalance, shares, 'feeBalance > shares');
     assertLte(senderAssets, currentAssets, 'senderAssets > currentAssets');
     assertGte(receiverBalance, 0, 'receiverBalance < 0');
   }
@@ -92,10 +95,12 @@ contract UnitYieldSharing is DSTestFull {
     ERC4626 _vault = ERC4626(_mockContract('vault'));
     vm.mockCall(address(_vault), abi.encodeWithSelector(ERC4626.convertToAssets.selector), abi.encode(0));
 
-    (uint256 senderBalance, uint256 receiverBalance, uint256 senderAssets) = _yieldSharing.balanceOf(_vault);
+    (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance, uint256 senderAssets) =
+      _yieldSharing.balanceOf(_vault);
 
     assertEq(senderBalance, 0);
     assertEq(receiverBalance, 0);
+    assertEq(feeBalance, 0);
     assertEq(senderAssets, 0);
   }
 
@@ -106,10 +111,12 @@ contract UnitYieldSharing is DSTestFull {
     ERC4626 _vault = ERC4626(_mockContract('vault'));
     vm.mockCall(address(_vault), abi.encodeWithSelector(ERC4626.convertToAssets.selector), abi.encode(0));
 
-    (uint256 senderBalance, uint256 receiverBalance, uint256 senderAssets) = _yieldSharing.balanceOf(_vault);
+    (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance, uint256 senderAssets) =
+      _yieldSharing.balanceOf(_vault);
 
     assertEq(senderBalance, 1);
     assertEq(receiverBalance, 0);
+    assertEq(feeBalance, 0);
     assertEq(senderAssets, 0);
   }
 }

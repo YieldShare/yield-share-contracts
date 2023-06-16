@@ -8,13 +8,13 @@ import {YieldShare} from 'contracts/YieldShare.sol';
 
 contract UnitYieldShareConstructor is Base {
   function test_TokenSet(ERC20 _token) public {
-    _yieldShare = new YieldShare(_token, _vault);
+    _yieldShare = new YieldShare(_token, _vault, address(0));
 
     assertEq(address(_yieldShare.TOKEN()), address(_token));
   }
 
   function test_VaultSet(ERC4626 _vault) public {
-    _yieldShare = new YieldShare(_token, _vault);
+    _yieldShare = new YieldShare(_token, _vault, address(0));
 
     assertEq(address(_yieldShare.VAULT()), address(_vault));
   }
