@@ -128,7 +128,7 @@ contract YieldShare is IYieldShare {
   function collectYieldSharing(address from, address to) external override {
     if (from == address(0) || to == address(0)) revert InvalidAddress();
 
-    YieldSharing.Data storage yieldSharing = YieldSharing.load(msg.sender, to);
+    YieldSharing.Data storage yieldSharing = YieldSharing.load(from, to);
 
     // Calculate current balance
     (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance, uint256 senderAssets) =
@@ -141,7 +141,7 @@ contract YieldShare is IYieldShare {
     // Start sharing yield with updated shares
     yieldSharing.start(senderBalance, senderAssets, yieldSharing.percentage);
 
-    emit YieldSharingCollected(msg.sender, to, senderBalance, receiverBalance);
+    emit YieldSharingCollected(from, to, senderBalance, receiverBalance);
   }
 
   /*///////////////////////////////////////////////////////////////

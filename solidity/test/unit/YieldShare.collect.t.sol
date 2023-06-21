@@ -21,18 +21,20 @@ contract UnitYieldShareCollect is Base {
   function test_CollectYieldSharing(
     address _caller,
     uint256 _shares,
+    address _from,
     address _to,
     uint8 _percentage,
     uint256 _currentAssets
   ) public {
     // VM configs
     vm.assume(_caller != address(0));
-    vm.assume(_caller != _to);
+    vm.assume(_from != _to);
     vm.assume(_shares != 0);
     vm.assume(_to != address(0));
+    vm.assume(_from != address(0));
     vm.assume(_currentAssets < (type(uint256).max / 1e18));
     vm.assume(_percentage > 0 && _percentage <= 95);
-    vm.startPrank(_caller);
+    vm.startPrank(_from);
 
     // Mock deposit shares
     vm.mockCall(address(_vault), abi.encodeWithSelector(ERC4626.deposit.selector), abi.encode(_shares));
@@ -46,18 +48,21 @@ contract UnitYieldShareCollect is Base {
 
     // Mock convertToAssets call after starting
     vm.mockCall(address(_vault), abi.encodeWithSelector(ERC4626.convertToAssets.selector), abi.encode(_currentAssets));
-    (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance) = _yieldShare.balanceOf(_caller, _to);
+    (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance) = _yieldShare.balanceOf(_from, _to);
+
+    vm.stopPrank();
+    vm.startPrank(_caller);
 
     // Expect call to emit event
     vm.expectEmit(true, true, false, true);
-    emit YieldSharingCollected(_caller, _to, senderBalance, receiverBalance);
+    emit YieldSharingCollected(_from, _to, senderBalance, receiverBalance);
 
     // Stop sharing yield
-    _yieldShare.collectYieldSharing(_caller, _to);
+    _yieldShare.collectYieldSharing(_from, _to);
 
     {
       // Asserts
-      uint256 callerShares = _yieldShare.getShares(_caller);
+      uint256 callerShares = _yieldShare.getShares(_from);
       uint256 toShares = _yieldShare.getShares(_to);
       uint256 feeShares = _yieldShare.getShares(_owner);
 
@@ -71,7 +76,7 @@ contract UnitYieldShareCollect is Base {
       assertEq(senderBalance + receiverBalance + feeBalance, _shares);
     }
 
-    (uint256 shares, uint256 lastAssets, uint8 percentage) = _yieldShare.getYieldSharing(_caller, _to);
+    (uint256 shares, uint256 lastAssets, uint8 percentage) = _yieldShare.getYieldSharing(_from, _to);
     assertEq(shares, senderBalance);
     assertLte(lastAssets, _currentAssets);
     assertEq(percentage, _percentage);
@@ -80,7 +85,7 @@ contract UnitYieldShareCollect is Base {
     vm.mockCall(address(_vault), abi.encodeWithSelector(ERC4626.convertToAssets.selector), abi.encode(lastAssets));
 
     (uint256 senderBalanceAfter, uint256 receiverBalanceAfter, uint256 feeBalanceAfter) =
-      _yieldShare.balanceOf(_caller, _to);
+      _yieldShare.balanceOf(_from, _to);
 
     assertEq(senderBalanceAfter, senderBalance);
     assertEq(receiverBalanceAfter, 0);
