@@ -28,9 +28,13 @@ interface IYieldShare {
 
   event YieldSharingStarted(address indexed from, address indexed to, uint256 shares, uint256 assets, uint8 percentage);
 
-  event YieldSharingStopped(address indexed from, address indexed to, uint256 senderBalance, uint256 receiverBalance);
+  event YieldSharingStopped(
+    address indexed from, address indexed to, uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance
+  );
 
-  event YieldSharingCollected(address indexed from, address indexed to, uint256 senderBalance, uint256 receiverBalance);
+  event YieldSharingCollected(
+    address indexed from, address indexed to, uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance
+  );
 
   /*///////////////////////////////////////////////////////////////
                             ERRORS

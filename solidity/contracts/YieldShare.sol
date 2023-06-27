@@ -122,7 +122,7 @@ contract YieldShare is IYieldShare {
     // Stop sharing yield
     yieldSharing.stop();
 
-    emit YieldSharingStopped(msg.sender, to, senderBalance, receiverBalance);
+    emit YieldSharingStopped(msg.sender, to, senderBalance, receiverBalance, feeBalance);
   }
 
   function collectYieldSharing(address from, address to) external override {
@@ -134,14 +134,14 @@ contract YieldShare is IYieldShare {
     (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance, uint256 senderAssets) =
       yieldSharing.balanceOf(VAULT);
 
-    // Update receiver balance
+    // Update receiver and treasury balances
     Balance.load(to).increase(receiverBalance);
     Balance.load(TREASURY).increase(feeBalance);
 
     // Start sharing yield with updated shares
     yieldSharing.start(senderBalance, senderAssets, yieldSharing.percentage);
 
-    emit YieldSharingCollected(from, to, senderBalance, receiverBalance);
+    emit YieldSharingCollected(from, to, senderBalance, receiverBalance, feeBalance);
   }
 
   /*///////////////////////////////////////////////////////////////

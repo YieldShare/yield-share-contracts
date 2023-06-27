@@ -6,7 +6,9 @@ import {ERC4626} from 'solmate/mixins/ERC4626.sol';
 import {IYieldShare} from 'contracts/YieldShare.sol';
 
 contract UnitYieldShareStop is Base {
-  event YieldSharingStopped(address indexed from, address indexed to, uint256 senderBalance, uint256 receiverBalance);
+  event YieldSharingStopped(
+    address indexed from, address indexed to, uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance
+  );
 
   function test_RevertIfZeroAddressTo() public {
     vm.expectRevert(IYieldShare.InvalidAddress.selector);
@@ -45,7 +47,7 @@ contract UnitYieldShareStop is Base {
 
     // Expect call to emit event
     vm.expectEmit(true, true, false, true);
-    emit YieldSharingStopped(_caller, _to, senderBalance, receiverBalance);
+    emit YieldSharingStopped(_caller, _to, senderBalance, receiverBalance, feeBalance);
 
     // Stop sharing yield
     _yieldShare.stopYieldSharing(_to);
