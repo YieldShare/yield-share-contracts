@@ -15,8 +15,8 @@ library YieldSharing {
     uint8 percentage;
   }
 
-  function load(address from, address to) internal pure returns (Data storage store) {
-    bytes32 s = keccak256(abi.encode('YieldSharing', from, to));
+  function load(address sharer, address receiver) internal pure returns (Data storage store) {
+    bytes32 s = keccak256(abi.encode('YieldSharing', sharer, receiver));
     assembly {
       store.slot := s
     }
@@ -41,7 +41,7 @@ library YieldSharing {
   function balanceOf(
     Data storage self,
     ERC4626 vault
-  ) internal view returns (uint256 senderBalance, uint256 receiverBalance, uint256 feeBalance, uint256 senderAssets) {
+  ) internal view returns (uint256 sharerBalance, uint256 receiverBalance, uint256 feeBalance, uint256 sharerAssets) {
     uint256 currentShares = self.shares;
     uint256 currentAssets = vault.convertToAssets(currentShares);
     uint256 lastAssets = self.lastAssets;
@@ -51,14 +51,14 @@ library YieldSharing {
 
     uint256 receiverAssets = diff.mulDivDown(receiverPercentage, 100);
     uint256 feeAssets = diff.mulDivDown(_FEE_PERCENTAGE, 100);
-    senderAssets = currentAssets - receiverAssets - feeAssets;
+    sharerAssets = currentAssets - receiverAssets - feeAssets;
 
     if (receiverAssets == 0) return (currentShares, 0, 0, currentAssets);
 
     uint256 pricePerShare = currentAssets.divWadDown(currentShares);
 
-    senderBalance = senderAssets.divWadDown(pricePerShare);
+    sharerBalance = sharerAssets.divWadDown(pricePerShare);
     receiverBalance = receiverAssets.divWadDown(pricePerShare);
-    feeBalance = currentShares - senderBalance - receiverBalance;
+    feeBalance = currentShares - sharerBalance - receiverBalance;
   }
 }
