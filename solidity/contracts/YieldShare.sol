@@ -6,8 +6,9 @@ import {ERC4626, ERC20} from 'solmate/mixins/ERC4626.sol';
 import {SafeTransferLib} from 'solmate/utils/SafeTransferLib.sol';
 import {Balance} from './storage/Balance.sol';
 import {YieldSharing} from './storage/YieldSharing.sol';
+import {Multicall} from 'openzeppelin/utils/Multicall.sol';
 
-contract YieldShare is IYieldShare {
+contract YieldShare is IYieldShare, Multicall {
   using SafeTransferLib for ERC20;
   using SafeTransferLib for ERC4626;
   using Balance for Balance.Data;

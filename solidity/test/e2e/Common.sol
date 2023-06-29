@@ -7,6 +7,7 @@ import {ERC4626} from 'solmate/mixins/ERC4626.sol';
 import {ERC20} from 'solmate/tokens/ERC20.sol';
 import {AaveV3ERC4626Factory} from 'yield-daddy/aave-v3/AaveV3ERC4626Factory.sol';
 import {YieldShare, IYieldShare} from 'contracts/YieldShare.sol';
+import {YieldShareFactory, IYieldShareFactory} from 'contracts/YieldShareFactory.sol';
 
 contract CommonE2EBase is DSTestFull {
   uint256 internal constant _FORK_BLOCK = 43_304_225;
@@ -19,7 +20,8 @@ contract CommonE2EBase is DSTestFull {
   AaveV3ERC4626Factory internal _aaveV3Factory = AaveV3ERC4626Factory(0xd847253c30502Af5Ae84275c52f24B438FDd9fE7); // Polygon Factory
 
   ERC4626 internal _vault;
-  IYieldShare internal _yieldShare;
+  YieldShare internal _yieldShare;
+  IYieldShareFactory internal _yieldShareFactory;
 
   function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('polygon'), _FORK_BLOCK);
@@ -27,6 +29,8 @@ contract CommonE2EBase is DSTestFull {
 
     _vault = ERC4626(address(_aaveV3Factory.createERC4626(_dai)));
 
-    _yieldShare = new YieldShare(_dai, _vault, _owner);
+    _yieldShareFactory = new YieldShareFactory(_owner);
+
+    _yieldShare = YieldShare(_yieldShareFactory.createYieldShareContract(_vault));
   }
 }
