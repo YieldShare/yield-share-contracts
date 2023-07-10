@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
 import {IYieldShare} from '../interfaces/IYieldShare.sol';
@@ -35,7 +35,7 @@ contract YieldShare is IYieldShare, Multicall {
     TOKEN.safeTransferFrom({from: msg.sender, to: address(this), amount: amount});
 
     // Approve token to vault
-    TOKEN.approve({spender: address(VAULT), amount: amount}); // @audit Approve type(uint256).max once
+    TOKEN.approve({spender: address(VAULT), amount: amount});
 
     // Deposit into vault
     uint256 shares = VAULT.deposit({assets: amount, receiver: address(this)});
@@ -157,7 +157,7 @@ contract YieldShare is IYieldShare, Multicall {
     (sharerBalance, receiverBalance, feeBalance,) = yieldSharing.balanceOf(VAULT);
   }
 
-  function getShares(address user) external view returns (uint256 shares) {
+  function getShares(address user) external view override returns (uint256 shares) {
     Balance.Data storage balance = Balance.load(user);
     return balance.shares;
   }
@@ -165,7 +165,7 @@ contract YieldShare is IYieldShare, Multicall {
   function getYieldSharing(
     address sharer,
     address receiver
-  ) external view returns (uint256 shares, uint256 lastAssets, uint8 percentage) {
+  ) external view override returns (uint256 shares, uint256 lastAssets, uint8 percentage) {
     YieldSharing.Data storage yieldSharing = YieldSharing.load(sharer, receiver);
     return (yieldSharing.shares, yieldSharing.lastAssets, yieldSharing.percentage);
   }

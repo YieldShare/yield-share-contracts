@@ -68,6 +68,8 @@ interface IYieldShare {
 
   function VAULT() external view returns (ERC4626 vault);
 
+  function TREASURY() external view returns (address treasury);
+
   /*///////////////////////////////////////////////////////////////
                             LOGIC
   //////////////////////////////////////////////////////////////*/
