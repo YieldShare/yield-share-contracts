@@ -15,7 +15,7 @@ contract UnitYieldShareFactory is DSTestFull {
   YieldShare internal _yieldShare;
   IYieldShareFactory internal _yieldShareFactory;
 
-  event YieldShareVaultCreated(address vault, address yieldShare);
+  event YieldShareContractCreated(address vault, address yieldShare);
   event TreasuryChanged(address oldTreasury, address newTreasury);
 
   function setUp() public {
@@ -34,7 +34,7 @@ contract UnitYieldShareFactory is DSTestFull {
 
     // Expect call to emit event
     vm.expectEmit(false, false, false, true);
-    emit YieldShareVaultCreated(address(_vault), predictedAddress);
+    emit YieldShareContractCreated(address(_vault), predictedAddress);
 
     _yieldShare = YieldShare(_yieldShareFactory.createYieldShareContract(_vault));
 

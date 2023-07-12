@@ -8,16 +8,32 @@ import {Balance} from './storage/Balance.sol';
 import {YieldSharing} from './storage/YieldSharing.sol';
 import {Multicall} from 'openzeppelin/utils/Multicall.sol';
 
+/**
+ * @title Contract for sharing a percentage of vault yield.
+ * @author YieldShare
+ * @dev See IYieldShare.
+ */
 contract YieldShare is IYieldShare, Multicall {
   using SafeTransferLib for ERC20;
   using SafeTransferLib for ERC4626;
   using Balance for Balance.Data;
   using YieldSharing for YieldSharing.Data;
 
+  /// @inheritdoc	IYieldShare
   ERC20 public immutable TOKEN;
+
+  /// @inheritdoc	IYieldShare
   ERC4626 public immutable VAULT;
+
+  /// @inheritdoc	IYieldShare
   address public immutable TREASURY;
 
+  /**
+   * @notice Defines the ERC20 token, ERC4626 vault, and treasury address permanently
+   * @param _token Initial treasury address
+   * @param _vault Initial treasury address
+   * @param _treasury Initial treasury address
+   */
   constructor(ERC20 _token, ERC4626 _vault, address _treasury) {
     TOKEN = _token;
     VAULT = _vault;
@@ -28,6 +44,7 @@ contract YieldShare is IYieldShare, Multicall {
                         VAULT FUNCTIONS
   //////////////////////////////////////////////////////////////*/
 
+  /// @inheritdoc	IYieldShare
   function depositAssets(uint256 amount) external override {
     if (amount == 0) revert InvalidAmount();
 
@@ -46,6 +63,7 @@ contract YieldShare is IYieldShare, Multicall {
     emit SharesDeposited(msg.sender, shares);
   }
 
+  /// @inheritdoc	IYieldShare
   function withdrawAssets(uint256 shares) external override {
     if (shares == 0) revert InvalidAmount();
 
@@ -58,6 +76,7 @@ contract YieldShare is IYieldShare, Multicall {
     emit SharesWithdrawn(msg.sender, shares);
   }
 
+  /// @inheritdoc	IYieldShare
   function depositShares(uint256 amount) external override {
     if (amount == 0) revert InvalidAmount();
 
@@ -70,6 +89,7 @@ contract YieldShare is IYieldShare, Multicall {
     emit SharesDeposited(msg.sender, amount);
   }
 
+  /// @inheritdoc	IYieldShare
   function withdrawShares(uint256 shares) external override {
     if (shares == 0) revert InvalidAmount();
 
@@ -86,6 +106,7 @@ contract YieldShare is IYieldShare, Multicall {
                       YIELD SHARING FUNCTIONS
   //////////////////////////////////////////////////////////////*/
 
+  /// @inheritdoc	IYieldShare
   function startYieldSharing(uint256 shares, address receiver, uint8 percentage) external override {
     if (shares == 0) revert InvalidAmount();
     if (receiver == address(0) && msg.sender != receiver) revert InvalidAddress();
@@ -107,6 +128,7 @@ contract YieldShare is IYieldShare, Multicall {
     emit YieldSharingStarted(msg.sender, receiver, shares, assets, percentage);
   }
 
+  /// @inheritdoc	IYieldShare
   function stopYieldSharing(address receiver) external override {
     if (receiver == address(0)) revert InvalidAddress();
 
@@ -126,6 +148,7 @@ contract YieldShare is IYieldShare, Multicall {
     emit YieldSharingStopped(msg.sender, receiver, sharerBalance, receiverBalance, feeBalance);
   }
 
+  /// @inheritdoc	IYieldShare
   function collectYieldSharing(address sharer, address receiver) external override {
     if (sharer == address(0) || receiver == address(0)) revert InvalidAddress();
 
@@ -149,6 +172,7 @@ contract YieldShare is IYieldShare, Multicall {
                       VIEW FUNCTIONS
   //////////////////////////////////////////////////////////////*/
 
+  /// @inheritdoc	IYieldShare
   function balanceOf(
     address sharer,
     address receiver
@@ -157,11 +181,13 @@ contract YieldShare is IYieldShare, Multicall {
     (sharerBalance, receiverBalance, feeBalance,) = yieldSharing.balanceOf(VAULT);
   }
 
+  /// @inheritdoc	IYieldShare
   function getShares(address user) external view override returns (uint256 shares) {
     Balance.Data storage balance = Balance.load(user);
     return balance.shares;
   }
 
+  /// @inheritdoc	IYieldShare
   function getYieldSharing(
     address sharer,
     address receiver
